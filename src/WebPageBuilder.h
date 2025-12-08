@@ -66,8 +66,7 @@ public:
         .power-preview {
             width: 100%;
             height: 120px;
-            margin-bottom: 10px;
-            margin-top: 40px;
+            margin-top: 30px;
             border: 2px solid #e0e0e0;
             cursor: pointer;
             display: flex;

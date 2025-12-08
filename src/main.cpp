@@ -42,7 +42,6 @@ void handleReset();
 void handleGetParameters();
 void handlePowerToggle();
 void updateLEDs();
-void printConfiguration();
 void loadFromEEPROM();
 void saveToEEPROM();
 
@@ -52,9 +51,6 @@ void setup() {
     Serial.begin(115200);
     delay(100);
     Serial.println("\n\n=== WS2812 Контроллер Запущен ===");
-    
-    // Вывод конфигурации
-    printConfiguration();
     
     // Инициализация EEPROM
     EEPROM.begin(EEPROM_SIZE);
@@ -105,8 +101,6 @@ void setupWiFi() {
     
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("\nWi-Fi подключен!");
-        Serial.print("IP адрес: ");
-        Serial.println(WiFi.localIP());
     } else {
         Serial.println("\nОшибка подключения к Wi-Fi!");
     }
@@ -165,14 +159,6 @@ void handleSetParameters() {
         server.send(200, "application/json", jsonResponse);
         yield();
         
-        // Логирование
-        Serial.print("Параметры установлены: Яркость=");
-        Serial.print(currentBrightness);
-        Serial.print("%, Температура=");
-        Serial.print(currentTemperature);
-        Serial.print("K, Ток=");
-        Serial.print(CurrentLimiter::getCurrentConsumption(currentBrightness));
-        Serial.println("мА");
     } else {
         server.send(400, "text/plain", "Отсутствуют параметры");
     }
@@ -199,10 +185,6 @@ void handleReset() {
     server.send(200, "application/json", jsonResponse);
     yield();
     
-    Serial.print("Сброс к значениям по умолчанию: Яркость=");
-    Serial.print(currentBrightness);
-    Serial.print("%, Температура=");
-    Serial.println(currentTemperature);
 }
 
 // ========== ОБРАБОТЧИК ПОЛУЧЕНИЯ ТЕКУЩИХ ПАРАМЕТРОВ ==========
@@ -231,8 +213,6 @@ void handlePowerToggle() {
     server.send(200, "application/json", jsonResponse);
     yield();
     
-    Serial.print("Питание переключено: ");
-    Serial.println(isPowerOn ? "ВКЛ" : "ВЫКЛ");
 }
 
 // ========== ЗАГРУЗКА ИЗ EEPROM ==========
@@ -250,13 +230,8 @@ void loadFromEEPROM() {
         currentBrightness = constrain(currentBrightness, MIN_BRIGHTNESS, MAX_BRIGHTNESS);
         currentTemperature = constrain(currentTemperature, MIN_TEMPERATURE, MAX_TEMPERATURE);
         
-        Serial.println("Значения загружены из EEPROM:");
-        Serial.printf("  Яркость: %d%%\n", currentBrightness);
-        Serial.printf("  Температура: %dK\n", currentTemperature);
-        Serial.printf("  Питание: %s\n", isPowerOn ? "ВКЛ" : "ВЫКЛ");
     } else {
         // Используем значения по умолчанию и сохраняем их
-        Serial.println("EEPROM пуст, используются значения по умолчанию");
         saveToEEPROM();
     }
 }
@@ -279,7 +254,6 @@ void saveToEEPROM() {
     // Коммитим изменения
     EEPROM.commit();
     
-    Serial.println("Значения сохранены в EEPROM");
 }
 
 // ========== ОБНОВЛЕНИЕ СВЕТОДИОДОВ ==========
@@ -287,7 +261,6 @@ void updateLEDs() {
     if (!isPowerOn || currentBrightness == 0) {
         strip.clear();
         strip.show();
-        Serial.println("Светодиоды выключены");
         return;
     }
     
@@ -305,37 +278,4 @@ void updateLEDs() {
     }
     
     strip.show();
-    
-    // Логирование для отладки
-    Serial.print("Обновление светодиодов: ");
-    Serial.print("R=");
-    Serial.print(color.r);
-    Serial.print(" G=");
-    Serial.print(color.g);
-    Serial.print(" B=");
-    Serial.print(color.b);
-    Serial.print(" (");
-    Serial.print(currentBrightness);
-    Serial.print("%, ");
-    Serial.print(currentTemperature);
-    Serial.println("K)");
-}
-
-// ========== ВЫВОД КОНФИГУРАЦИИ ==========
-void printConfiguration() {
-    Serial.println("========== КОНФИГУРАЦИЯ ПРОЕКТА ==========");
-    Serial.printf("Заголовок: %s\n", HTML_TITLE);
-    Serial.printf("Светодиодов: %d\n", NUM_LEDS);
-    Serial.printf("Максимальный ток: %d мА\n", MAX_CURRENT_MA);
-    Serial.printf("Ток на светодиод: %d мА\n", CURRENT_PER_LED_MA);
-    Serial.println();
-    Serial.println("ДИАПАЗОНЫ ПАРАМЕТРОВ:");
-    Serial.printf("  Яркость: %d-%d%%\n", MIN_BRIGHTNESS, MAX_BRIGHTNESS);
-    Serial.printf("  Температура: %d-%dK\n", MIN_TEMPERATURE, MAX_TEMPERATURE);
-    Serial.println();
-    Serial.println("ЗНАЧЕНИЯ ПО УМОЛЧАНИЮ:");
-    Serial.printf("  Яркость: %d%%\n", DEFAULT_BRIGHTNESS);
-    Serial.printf("  Температура: %dK\n", DEFAULT_TEMPERATURE);
-    Serial.printf("  Питание: %s\n", DEFAULT_POWER_ON ? "ВКЛ" : "ВЫКЛ");
-    Serial.println("==========================================");
 }

@@ -66,7 +66,8 @@ public:
         .power-preview {
             width: 100%;
             height: 120px;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
+            margin-top: 40px;
             border: 2px solid #e0e0e0;
             cursor: pointer;
             display: flex;
@@ -155,16 +156,6 @@ public:
             border: none;
         }
         
-        .info-panel {
-            background: #fafafa;
-            border: 1px solid #e0e0e0;
-            padding: 15px;
-            margin-top: 20px;
-            font-size: 12px;
-            text-align: center;
-            color: #666;
-        }
-        
         @media (max-width: 480px) {
             .container {
                 padding: 0;
@@ -190,8 +181,6 @@ public:
         </div>
         
         <div class='control-panel'>
-            <!-- Кнопка питания с предпросмотром цвета -->
-            <div class='power-preview' id='powerPreview'>ВЫКЛЮЧЕНО</div>
             
             <!-- Яркость -->
             <div class='control-group'>
@@ -241,14 +230,8 @@ public:
         html += R"=====(' step='100' class='slider' id='temperatureSlider'>
             </div>
             
-            <!-- Информация -->
-            <div class='info-panel' id='infoPanel'>
-                Макс. ток: )=====";
-        html += String(MAX_CURRENT_MA);
-        html += R"=====(мА | Светодиодов: )=====";
-        html += String(NUM_LEDS);
-        html += R"=====(
-            </div>
+            <!-- Кнопка питания с предпросмотром цвета -->
+            <div class='power-preview' id='powerPreview'>ВЫКЛЮЧЕНО</div>
         </div>
     </div>
     
@@ -298,7 +281,6 @@ public:
         const temperatureInput = document.getElementById('temperatureInput');
         const powerPreview = document.getElementById('powerPreview');
         const statusText = document.getElementById('statusText');
-        const infoPanel = document.getElementById('infoPanel');
         
         // Таймер для задержки отправки запросов
         let updateTimeout = null;
@@ -308,7 +290,6 @@ public:
             fetchDeviceIP();
             loadCurrentValues();
             updatePowerPreview();
-            updateInfoPanel();
             setupEventListeners();
         }
         
@@ -318,13 +299,6 @@ public:
             const host = window.location.hostname;
             deviceIP = `${protocol}//${host}`;
             statusText.textContent = `Подключено к: ${deviceIP}`;
-        }
-        
-        // Обновление информационной панели
-        function updateInfoPanel() {
-            infoPanel.textContent = 
-                `Макс. ток: ${maxCurrent}мА | ` +
-                `Светодиодов: ${numLeds}`;
         }
         
         // Загрузка текущих значений из EEPROM

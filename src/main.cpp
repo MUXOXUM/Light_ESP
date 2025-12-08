@@ -7,6 +7,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <Adafruit_NeoPixel.h>
+#include <EEPROM.h>
 
 // Подключение пользовательских файлов
 #include "secrets.h"
@@ -24,14 +25,26 @@ int currentBrightness = DEFAULT_BRIGHTNESS;    // Яркость из конфи
 int currentTemperature = DEFAULT_TEMPERATURE;  // Температура из конфига
 bool isPowerOn = DEFAULT_POWER_ON;             // Состояние питания из конфига
 
+// Адреса в EEPROM для хранения значений
+#define EEPROM_SIZE 16
+#define EEPROM_ADDR_BRIGHTNESS 0
+#define EEPROM_ADDR_TEMPERATURE 2
+#define EEPROM_ADDR_POWER 4
+#define EEPROM_MAGIC 0xAA55
+#define EEPROM_ADDR_MAGIC 10
+
 // Прототипы функций
 void setupWiFi();
 void setupWebServer();
 void handleRoot();
 void handleSetParameters();
 void handleReset();
+void handleGetParameters();
+void handlePowerToggle();
 void updateLEDs();
 void printConfiguration();
+void loadFromEEPROM();
+void saveToEEPROM();
 
 // ========== SETUP ==========
 void setup() {
@@ -41,6 +54,13 @@ void setup() {
     
     // Вывод конфигурации
     printConfiguration();
+    
+    // Инициализация EEPROM
+    EEPROM.begin(EEPROM_SIZE);
+    Serial.println("EEPROM инициализирован");
+    
+    // Загрузка значений из EEPROM
+    loadFromEEPROM();
     
     // Инициализация светодиодной ленты
     strip.begin();
@@ -96,6 +116,8 @@ void setupWebServer() {
     server.on("/", handleRoot);
     server.on("/set", HTTP_GET, handleSetParameters);
     server.on("/reset", HTTP_GET, handleReset);
+    server.on("/get", HTTP_GET, handleGetParameters);
+    server.on("/power", HTTP_GET, handlePowerToggle);
     
     server.begin();
     Serial.println("HTTP сервер запущен на порту 80");
@@ -122,6 +144,9 @@ void handleSetParameters() {
         currentBrightness = CurrentLimiter::applyCurrentLimit(requestedBrightness, requestedTemperature);
         currentTemperature = requestedTemperature;
         isPowerOn = true;
+        
+        // Сохраняем в EEPROM
+        saveToEEPROM();
         
         // Обновляем светодиоды
         updateLEDs();
@@ -152,6 +177,9 @@ void handleReset() {
     currentTemperature = DEFAULT_TEMPERATURE;
     isPowerOn = DEFAULT_POWER_ON;
     
+    // Сохраняем в EEPROM
+    saveToEEPROM();
+    
     // Обновляем светодиоды
     updateLEDs();
     
@@ -166,6 +194,81 @@ void handleReset() {
     Serial.print(currentBrightness);
     Serial.print("%, Температура=");
     Serial.println(currentTemperature);
+}
+
+// ========== ОБРАБОТЧИК ПОЛУЧЕНИЯ ТЕКУЩИХ ПАРАМЕТРОВ ==========
+void handleGetParameters() {
+    String jsonResponse = "{\"brightness\": " + String(currentBrightness) + 
+                         ", \"temperature\": " + String(currentTemperature) + 
+                         ", \"power\": " + String(isPowerOn ? 1 : 0) + "}";
+    server.send(200, "application/json", jsonResponse);
+}
+
+// ========== ОБРАБОТЧИК ПЕРЕКЛЮЧЕНИЯ ПИТАНИЯ ==========
+void handlePowerToggle() {
+    isPowerOn = !isPowerOn;
+    
+    // Сохраняем в EEPROM
+    saveToEEPROM();
+    
+    // Обновляем светодиоды
+    updateLEDs();
+    
+    // Отправка JSON ответа
+    String jsonResponse = "{\"brightness\": " + String(currentBrightness) + 
+                         ", \"temperature\": " + String(currentTemperature) + 
+                         ", \"power\": " + String(isPowerOn ? 1 : 0) + "}";
+    server.send(200, "application/json", jsonResponse);
+    
+    Serial.print("Питание переключено: ");
+    Serial.println(isPowerOn ? "ВКЛ" : "ВЫКЛ");
+}
+
+// ========== ЗАГРУЗКА ИЗ EEPROM ==========
+void loadFromEEPROM() {
+    // Проверяем магическое число для определения, есть ли сохраненные данные
+    uint16_t magic = (EEPROM.read(EEPROM_ADDR_MAGIC) << 8) | EEPROM.read(EEPROM_ADDR_MAGIC + 1);
+    
+    if (magic == EEPROM_MAGIC) {
+        // Читаем сохраненные значения
+        currentBrightness = (EEPROM.read(EEPROM_ADDR_BRIGHTNESS) << 8) | EEPROM.read(EEPROM_ADDR_BRIGHTNESS + 1);
+        currentTemperature = (EEPROM.read(EEPROM_ADDR_TEMPERATURE) << 8) | EEPROM.read(EEPROM_ADDR_TEMPERATURE + 1);
+        isPowerOn = EEPROM.read(EEPROM_ADDR_POWER) != 0;
+        
+        // Проверяем границы
+        currentBrightness = constrain(currentBrightness, MIN_BRIGHTNESS, MAX_BRIGHTNESS);
+        currentTemperature = constrain(currentTemperature, MIN_TEMPERATURE, MAX_TEMPERATURE);
+        
+        Serial.println("Значения загружены из EEPROM:");
+        Serial.printf("  Яркость: %d%%\n", currentBrightness);
+        Serial.printf("  Температура: %dK\n", currentTemperature);
+        Serial.printf("  Питание: %s\n", isPowerOn ? "ВКЛ" : "ВЫКЛ");
+    } else {
+        // Используем значения по умолчанию и сохраняем их
+        Serial.println("EEPROM пуст, используются значения по умолчанию");
+        saveToEEPROM();
+    }
+}
+
+// ========== СОХРАНЕНИЕ В EEPROM ==========
+void saveToEEPROM() {
+    // Сохраняем значения
+    EEPROM.write(EEPROM_ADDR_BRIGHTNESS, (currentBrightness >> 8) & 0xFF);
+    EEPROM.write(EEPROM_ADDR_BRIGHTNESS + 1, currentBrightness & 0xFF);
+    
+    EEPROM.write(EEPROM_ADDR_TEMPERATURE, (currentTemperature >> 8) & 0xFF);
+    EEPROM.write(EEPROM_ADDR_TEMPERATURE + 1, currentTemperature & 0xFF);
+    
+    EEPROM.write(EEPROM_ADDR_POWER, isPowerOn ? 1 : 0);
+    
+    // Сохраняем магическое число
+    EEPROM.write(EEPROM_ADDR_MAGIC, (EEPROM_MAGIC >> 8) & 0xFF);
+    EEPROM.write(EEPROM_ADDR_MAGIC + 1, EEPROM_MAGIC & 0xFF);
+    
+    // Коммитим изменения
+    EEPROM.commit();
+    
+    Serial.println("Значения сохранены в EEPROM");
 }
 
 // ========== ОБНОВЛЕНИЕ СВЕТОДИОДОВ ==========

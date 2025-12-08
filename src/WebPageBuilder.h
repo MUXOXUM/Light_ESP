@@ -164,6 +164,44 @@ public:
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
+        .power-button-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .power-button {
+            background: linear-gradient(135deg, #4cc9f0 0%, #3a9bc1 100%);
+            border: none;
+            border-radius: 50px;
+            padding: 20px 50px;
+            font-size: 1.3em;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 201, 240, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .power-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(76, 201, 240, 0.6);
+        }
+        
+        .power-button:active {
+            transform: scale(0.98);
+        }
+        
+        .power-button.off {
+            background: linear-gradient(135deg, #666 0%, #444 100%);
+            box-shadow: 0 4px 15px rgba(100, 100, 100, 0.4);
+        }
+        
+        .power-button.off:hover {
+            box-shadow: 0 6px 20px rgba(100, 100, 100, 0.6);
+        }
+        
         @media (max-width: 480px) {
             .container {
                 padding: 10px;
@@ -190,6 +228,10 @@ public:
         html += String(HTML_TITLE);
         html += R"=====(</h1>
             <p class='status' id='statusText'>Подключение...</p>
+        </div>
+        
+        <div class='power-button-container'>
+            <button class='power-button' id='powerButton'>ВКЛ</button>
         </div>
         
         <div class='control-panel'>
@@ -318,6 +360,7 @@ public:
         const colorPreview = document.getElementById('colorPreview');
         const statusText = document.getElementById('statusText');
         const infoPanel = document.getElementById('infoPanel');
+        const powerButton = document.getElementById('powerButton');
         
         // Таймер для задержки отправки запросов
         let updateTimeout = null;
@@ -325,9 +368,44 @@ public:
         // Инициализация
         function init() {
             fetchDeviceIP();
+            loadCurrentValues();
             updateColorPreview();
             updateInfoPanel();
             setupEventListeners();
+        }
+        
+        // Загрузка текущих значений из EEPROM
+        async function loadCurrentValues() {
+            try {
+                const response = await fetch('/get');
+                if (response.ok) {
+                    const data = await response.json();
+                    currentBrightness = data.brightness;
+                    currentTemperature = data.temperature;
+                    isPowerOn = data.power === 1;
+                    
+                    // Обновляем UI
+                    brightnessSlider.value = currentBrightness;
+                    brightnessInput.value = currentBrightness;
+                    temperatureSlider.value = currentTemperature;
+                    temperatureInput.value = currentTemperature;
+                    updatePowerButton();
+                    updateColorPreview();
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке значений:', error);
+            }
+        }
+        
+        // Обновление кнопки питания
+        function updatePowerButton() {
+            if (isPowerOn) {
+                powerButton.textContent = 'ВКЛ';
+                powerButton.classList.remove('off');
+            } else {
+                powerButton.textContent = 'ВЫКЛ';
+                powerButton.classList.add('off');
+            }
         }
         
         // Получение IP устройства
@@ -419,10 +497,33 @@ public:
                 updateColorPreview();
                 scheduleUpdate();
             });
+            
+            // Кнопка питания
+            powerButton.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/power');
+                    if (response.ok) {
+                        const data = await response.json();
+                        isPowerOn = data.power === 1;
+                        updatePowerButton();
+                        updateColorPreview();
+                    }
+                } catch (error) {
+                    console.error('Ошибка при переключении питания:', error);
+                    showNotification('Ошибка подключения к устройству');
+                }
+            });
         }
         
         // Обновление предпросмотра цвета
         function updateColorPreview() {
+            if (!isPowerOn) {
+                colorPreview.style.background = '#000';
+                colorPreview.textContent = 'ВЫКЛ';
+                colorPreview.style.color = '#fff';
+                return;
+            }
+            
             // Рассчитываем цвет на основе температуры и яркости
             const tempRange = maxTemperature - minTemperature;
             const tempRatio = (currentTemperature - minTemperature) / tempRange;
@@ -472,6 +573,7 @@ public:
                     }
                     
                     isPowerOn = data.power === 1;
+                    updatePowerButton();
                     console.log('Успешно обновлено:', data);
                 }
             } catch (error) {

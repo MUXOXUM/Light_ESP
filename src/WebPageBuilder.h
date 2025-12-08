@@ -21,202 +21,161 @@ public:
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
+            background: #f5f5f5;
+            color: #333;
             min-height: 100vh;
             padding: 20px;
         }
         
         .container {
-            max-width: 600px;
+            max-width: 500px;
             margin: 0 auto;
-            padding: 20px;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #fff;
+            border: 1px solid #e0e0e0;
         }
         
         h1 {
-            color: #4cc9f0;
-            font-size: 2.5em;
+            color: #333;
+            font-size: 24px;
+            font-weight: 600;
             margin-bottom: 10px;
-            text-shadow: 0 2px 10px rgba(76, 201, 240, 0.3);
         }
         
         .status {
-            color: #7eff7a;
-            font-size: 0.9em;
-            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
         }
         
         .control-panel {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .power-preview {
+            width: 100%;
+            height: 120px;
+            margin-bottom: 30px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+            color: #fff;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        
+        .power-preview:hover {
+            opacity: 0.9;
+        }
+        
+        .power-preview:active {
+            opacity: 0.8;
+        }
+        
+        .power-preview.off {
+            background: #9e9e9e;
         }
         
         .control-group {
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
         
         .control-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         
         .control-label {
-            font-size: 1.1em;
-            color: #f1f1f1;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .control-icon {
-            font-size: 1.3em;
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
         }
         
         .value-display {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
         }
         
         .value-input {
-            width: 100px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 2px solid #4cc9f0;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1em;
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            background: #fff;
+            color: #333;
+            font-size: 16px;
             text-align: center;
         }
         
         .value-input:focus {
             outline: none;
-            border-color: #7eff7a;
-            box-shadow: 0 0 10px rgba(126, 255, 122, 0.3);
+            border-color: #2196F3;
         }
         
         input[type="range"] {
             width: 100%;
-            height: 12px;
+            height: 6px;
             -webkit-appearance: none;
-            background: linear-gradient(to right, #2d3748, #4a5568);
-            border-radius: 10px;
+            background: #e0e0e0;
             outline: none;
         }
         
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: #4cc9f0;
+            width: 20px;
+            height: 20px;
+            border-radius: 0;
+            background: #2196F3;
             cursor: pointer;
-            box-shadow: 0 0 15px rgba(76, 201, 240, 0.5);
-            transition: all 0.2s;
         }
         
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 20px rgba(76, 201, 240, 0.8);
-        }
-        
-        .color-preview {
-            width: 100%;
-            height: 100px;
-            border-radius: 15px;
-            margin: 25px 0;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.2em;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 0;
+            background: #2196F3;
+            cursor: pointer;
+            border: none;
         }
         
         .info-panel {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
             padding: 15px;
             margin-top: 20px;
-            font-size: 0.9em;
+            font-size: 12px;
             text-align: center;
-            color: #a0a0a0;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .power-button-container {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .power-button {
-            background: linear-gradient(135deg, #4cc9f0 0%, #3a9bc1 100%);
-            border: none;
-            border-radius: 50px;
-            padding: 20px 50px;
-            font-size: 1.3em;
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(76, 201, 240, 0.4);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        
-        .power-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(76, 201, 240, 0.6);
-        }
-        
-        .power-button:active {
-            transform: scale(0.98);
-        }
-        
-        .power-button.off {
-            background: linear-gradient(135deg, #666 0%, #444 100%);
-            box-shadow: 0 4px 15px rgba(100, 100, 100, 0.4);
-        }
-        
-        .power-button.off:hover {
-            box-shadow: 0 6px 20px rgba(100, 100, 100, 0.6);
+            color: #666;
         }
         
         @media (max-width: 480px) {
             .container {
-                padding: 10px;
+                padding: 0;
             }
             
             h1 {
-                font-size: 2em;
+                font-size: 20px;
             }
             
             .control-panel {
-                padding: 20px;
-            }
-            
-            .value-input {
-                width: 80px;
+                padding: 15px;
             }
         }
     </style>
@@ -224,24 +183,20 @@ public:
 <body>
     <div class='container'>
         <div class='header'>
-            <h1>🌡️ )=====";
+            <h1>)=====";
         html += String(HTML_TITLE);
         html += R"=====(</h1>
             <p class='status' id='statusText'>Подключение...</p>
         </div>
         
-        <div class='power-button-container'>
-            <button class='power-button' id='powerButton'>ВКЛ</button>
-        </div>
-        
         <div class='control-panel'>
+            <!-- Кнопка питания с предпросмотром цвета -->
+            <div class='power-preview' id='powerPreview'>ВЫКЛЮЧЕНО</div>
+            
             <!-- Яркость -->
             <div class='control-group'>
                 <div class='control-header'>
-                    <div class='control-label'>
-                        <span class='control-icon'>💡</span>
-                        <span>Яркость</span>
-                    </div>
+                    <div class='control-label'>Яркость</div>
                     <div class='value-display'>
                         <input type='number' min=')=====";
         html += String(MIN_BRIGHTNESS);
@@ -249,8 +204,7 @@ public:
         html += String(MAX_BRIGHTNESS);
         html += R"=====(' value=')=====";
         html += String(DEFAULT_BRIGHTNESS);
-        html += R"=====(' 
-                               class='value-input' id='brightnessInput'>
+        html += R"=====(' class='value-input' id='brightnessInput'>
                         <span>%</span>
                     </div>
                 </div>
@@ -260,17 +214,13 @@ public:
         html += String(MAX_BRIGHTNESS);
         html += R"=====(' value=')=====";
         html += String(DEFAULT_BRIGHTNESS);
-        html += R"=====(' step='1'
-                       class='slider' id='brightnessSlider'>
+        html += R"=====(' step='1' class='slider' id='brightnessSlider'>
             </div>
             
             <!-- Температура -->
             <div class='control-group'>
                 <div class='control-header'>
-                    <div class='control-label'>
-                        <span class='control-icon'>🌡️</span>
-                        <span>Температура цвета</span>
-                    </div>
+                    <div class='control-label'>Температура цвета</div>
                     <div class='value-display'>
                         <input type='number' min=')=====";
         html += String(MIN_TEMPERATURE);
@@ -278,8 +228,7 @@ public:
         html += String(MAX_TEMPERATURE);
         html += R"=====(' value=')=====";
         html += String(DEFAULT_TEMPERATURE);
-        html += R"=====(' 
-                               class='value-input' id='temperatureInput'>
+        html += R"=====(' class='value-input' id='temperatureInput'>
                         <span>K</span>
                     </div>
                 </div>
@@ -289,13 +238,7 @@ public:
         html += String(MAX_TEMPERATURE);
         html += R"=====(' value=')=====";
         html += String(DEFAULT_TEMPERATURE);
-        html += R"=====(' step='100'
-                       class='slider' id='temperatureSlider'>
-            </div>
-            
-            <!-- Предпросмотр цвета -->
-            <div class='color-preview' id='colorPreview'>
-                Цвет предпросмотра
+        html += R"=====(' step='100' class='slider' id='temperatureSlider'>
             </div>
             
             <!-- Информация -->
@@ -304,17 +247,13 @@ public:
         html += String(MAX_CURRENT_MA);
         html += R"=====(мА | Светодиодов: )=====";
         html += String(NUM_LEDS);
-        html += R"=====( | По умолчанию: )=====";
-        html += String(DEFAULT_BRIGHTNESS);
-        html += R"=====(%, )=====";
-        html += String(DEFAULT_TEMPERATURE);
-        html += R"=====(K
+        html += R"=====(
             </div>
         </div>
     </div>
     
     <script>
-        // Текущие значения (берутся из начальных значений в HTML)
+        // Текущие значения
         let currentBrightness = )=====";
         html += String(DEFAULT_BRIGHTNESS);
         html += R"=====(;
@@ -326,7 +265,7 @@ public:
         html += R"=====(;
         let deviceIP = '';
         
-        // Конфигурационные параметры (берутся из HTML атрибутов)
+        // Конфигурационные параметры
         const minBrightness = )=====";
         html += String(MIN_BRIGHTNESS);
         html += R"=====(;
@@ -357,10 +296,9 @@ public:
         const brightnessInput = document.getElementById('brightnessInput');
         const temperatureSlider = document.getElementById('temperatureSlider');
         const temperatureInput = document.getElementById('temperatureInput');
-        const colorPreview = document.getElementById('colorPreview');
+        const powerPreview = document.getElementById('powerPreview');
         const statusText = document.getElementById('statusText');
         const infoPanel = document.getElementById('infoPanel');
-        const powerButton = document.getElementById('powerButton');
         
         // Таймер для задержки отправки запросов
         let updateTimeout = null;
@@ -369,9 +307,24 @@ public:
         function init() {
             fetchDeviceIP();
             loadCurrentValues();
-            updateColorPreview();
+            updatePowerPreview();
             updateInfoPanel();
             setupEventListeners();
+        }
+        
+        // Получение IP устройства
+        function fetchDeviceIP() {
+            const protocol = window.location.protocol;
+            const host = window.location.hostname;
+            deviceIP = `${protocol}//${host}`;
+            statusText.textContent = `Подключено к: ${deviceIP}`;
+        }
+        
+        // Обновление информационной панели
+        function updateInfoPanel() {
+            infoPanel.textContent = 
+                `Макс. ток: ${maxCurrent}мА | ` +
+                `Светодиодов: ${numLeds}`;
         }
         
         // Загрузка текущих значений из EEPROM
@@ -389,49 +342,55 @@ public:
                     brightnessInput.value = currentBrightness;
                     temperatureSlider.value = currentTemperature;
                     temperatureInput.value = currentTemperature;
-                    updatePowerButton();
-                    updateColorPreview();
+                    updatePowerPreview();
                 }
             } catch (error) {
                 console.error('Ошибка при загрузке значений:', error);
             }
         }
         
-        // Обновление кнопки питания
-        function updatePowerButton() {
-            if (isPowerOn) {
-                powerButton.textContent = 'ВКЛ';
-                powerButton.classList.remove('off');
+        // Обновление предпросмотра питания и цвета
+        function updatePowerPreview() {
+            if (!isPowerOn) {
+                powerPreview.style.background = '#9e9e9e';
+                powerPreview.textContent = 'ВЫКЛЮЧЕНО';
+                powerPreview.classList.add('off');
             } else {
-                powerButton.textContent = 'ВЫКЛ';
-                powerButton.classList.add('off');
+                powerPreview.classList.remove('off');
+                // Рассчитываем цвет на основе температуры и яркости
+                const tempRange = maxTemperature - minTemperature;
+                const tempRatio = (currentTemperature - minTemperature) / tempRange;
+                const hue = 50 - tempRatio * 50; // От желтого (50) к голубому (0)
+                const saturation = 80;
+                const lightness = Math.min(50, currentBrightness / 2);
+                
+                powerPreview.style.background = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                powerPreview.textContent = `ВКЛЮЧЕНО - ${currentTemperature}K, ${currentBrightness}%`;
             }
-        }
-        
-        // Получение IP устройства
-        function fetchDeviceIP() {
-            const protocol = window.location.protocol;
-            const host = window.location.hostname;
-            deviceIP = `${protocol}//${host}`;
-            statusText.textContent = `Подключено к: ${deviceIP}`;
-        }
-        
-        // Обновление информационной панели
-        function updateInfoPanel() {
-            infoPanel.textContent = 
-                `Макс. ток: ${maxCurrent}мА | ` +
-                `Светодиодов: ${numLeds} | ` +
-                `По умолчанию: ${defaultBrightness}%, ${defaultTemperature}K`;
         }
         
         // Настройка обработчиков событий
         function setupEventListeners() {
+            // Кнопка питания
+            powerPreview.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/power');
+                    if (response.ok) {
+                        const data = await response.json();
+                        isPowerOn = data.power === 1;
+                        updatePowerPreview();
+                    }
+                } catch (error) {
+                    console.error('Ошибка при переключении питания:', error);
+                }
+            });
+            
             // Яркость: синхронизация ползунка и поля ввода
             brightnessSlider.addEventListener('input', (e) => {
                 const value = parseInt(e.target.value);
                 brightnessInput.value = value;
                 currentBrightness = value;
-                updateColorPreview();
+                updatePowerPreview();
                 scheduleUpdate();
             });
             
@@ -440,7 +399,7 @@ public:
                 brightnessSlider.value = value;
                 brightnessInput.value = value;
                 currentBrightness = value;
-                updateColorPreview();
+                updatePowerPreview();
                 scheduleUpdate();
             });
             
@@ -449,7 +408,7 @@ public:
                 const value = parseInt(e.target.value);
                 temperatureInput.value = value;
                 currentTemperature = value;
-                updateColorPreview();
+                updatePowerPreview();
                 scheduleUpdate();
             });
             
@@ -458,7 +417,7 @@ public:
                 temperatureSlider.value = value;
                 temperatureInput.value = value;
                 currentTemperature = value;
-                updateColorPreview();
+                updatePowerPreview();
                 scheduleUpdate();
             });
             
@@ -486,7 +445,7 @@ public:
                 brightnessSlider.value = defaultBrightness;
                 brightnessInput.value = defaultBrightness;
                 currentBrightness = defaultBrightness;
-                updateColorPreview();
+                updatePowerPreview();
                 scheduleUpdate();
             });
             
@@ -494,46 +453,9 @@ public:
                 temperatureSlider.value = defaultTemperature;
                 temperatureInput.value = defaultTemperature;
                 currentTemperature = defaultTemperature;
-                updateColorPreview();
+                updatePowerPreview();
                 scheduleUpdate();
             });
-            
-            // Кнопка питания
-            powerButton.addEventListener('click', async () => {
-                try {
-                    const response = await fetch('/power');
-                    if (response.ok) {
-                        const data = await response.json();
-                        isPowerOn = data.power === 1;
-                        updatePowerButton();
-                        updateColorPreview();
-                    }
-                } catch (error) {
-                    console.error('Ошибка при переключении питания:', error);
-                    showNotification('Ошибка подключения к устройству');
-                }
-            });
-        }
-        
-        // Обновление предпросмотра цвета
-        function updateColorPreview() {
-            if (!isPowerOn) {
-                colorPreview.style.background = '#000';
-                colorPreview.textContent = 'ВЫКЛ';
-                colorPreview.style.color = '#fff';
-                return;
-            }
-            
-            // Рассчитываем цвет на основе температуры и яркости
-            const tempRange = maxTemperature - minTemperature;
-            const tempRatio = (currentTemperature - minTemperature) / tempRange;
-            const hue = 50 - tempRatio * 50; // От желтого (50) к голубому (0)
-            const saturation = 80;
-            const lightness = Math.min(50, currentBrightness / 2);
-            
-            colorPreview.style.background = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-            colorPreview.textContent = `${currentTemperature}K, ${currentBrightness}%`;
-            colorPreview.style.color = lightness > 30 ? '#000' : '#fff';
         }
         
         // Планирование обновления параметров на устройстве
@@ -544,7 +466,7 @@ public:
             
             updateTimeout = setTimeout(() => {
                 sendUpdateToDevice();
-            }, 300); // Задержка 300 мс
+            }, 300);
         }
         
         // Отправка параметров на устройство
@@ -561,24 +483,22 @@ public:
                         currentBrightness = data.brightness;
                         brightnessSlider.value = currentBrightness;
                         brightnessInput.value = currentBrightness;
-                        updateColorPreview();
-                        showNotification('Яркость скорректирована системой ограничения тока');
+                        updatePowerPreview();
                     }
                     
                     if (data.temperature !== currentTemperature) {
                         currentTemperature = data.temperature;
                         temperatureSlider.value = currentTemperature;
                         temperatureInput.value = currentTemperature;
-                        updateColorPreview();
+                        updatePowerPreview();
                     }
                     
                     isPowerOn = data.power === 1;
-                    updatePowerButton();
+                    updatePowerPreview();
                     console.log('Успешно обновлено:', data);
                 }
             } catch (error) {
                 console.error('Ошибка при обновлении:', error);
-                showNotification('Ошибка подключения к устройству');
             }
         }
         
@@ -586,37 +506,6 @@ public:
         function constrainValue(value, min, max) {
             return Math.min(Math.max(value, min), max);
         }
-        
-        function showNotification(message) {
-            console.log('Уведомление:', message);
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(message);
-            }
-        }
-        
-        // Функция сброса к значениям по умолчанию
-        function resetToDefaults() {
-            currentBrightness = defaultBrightness;
-            currentTemperature = defaultTemperature;
-            
-            brightnessSlider.value = currentBrightness;
-            brightnessInput.value = currentBrightness;
-            temperatureSlider.value = currentTemperature;
-            temperatureInput.value = currentTemperature;
-            
-            updateColorPreview();
-            scheduleUpdate();
-        }
-        
-        // Горячие клавиши
-        document.addEventListener('keydown', (e) => {
-            // Ctrl+R - сброс к значениям по умолчанию
-            if (e.ctrlKey && e.key === 'r') {
-                e.preventDefault();
-                resetToDefaults();
-                showNotification('Сброс к значениям по умолчанию');
-            }
-        });
         
         // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', init);

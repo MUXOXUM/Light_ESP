@@ -50,6 +50,7 @@ void saveToEEPROM();
 void setup() {
     // Инициализация Serial порта
     Serial.begin(115200);
+    delay(100);
     Serial.println("\n\n=== WS2812 Контроллер Запущен ===");
     
     // Вывод конфигурации
@@ -84,6 +85,7 @@ void setup() {
 // ========== LOOP ==========
 void loop() {
     server.handleClient();
+    yield();
     delay(1);
 }
 
@@ -126,8 +128,13 @@ void setupWebServer() {
 // ========== ОБРАБОТЧИК КОРНЕВОЙ СТРАНИЦЫ ==========
 void handleRoot() {
     // Генерируем HTML страницу с текущими настройками
-    String html = WebPageBuilder::getHTMLPage();
-    server.send(200, "text/html", html);
+    // Используем отдельный блок для освобождения памяти после отправки
+    {
+        String html = WebPageBuilder::getHTMLPage();
+        server.send(200, "text/html", html);
+    }
+    // Освобождаем память
+    yield();
 }
 
 // ========== ОБРАБОТЧИК УСТАНОВКИ ПАРАМЕТРОВ ==========
@@ -156,6 +163,7 @@ void handleSetParameters() {
                              ", \"temperature\": " + String(currentTemperature) + 
                              ", \"power\": " + String(isPowerOn ? 1 : 0) + "}";
         server.send(200, "application/json", jsonResponse);
+        yield();
         
         // Логирование
         Serial.print("Параметры установлены: Яркость=");
@@ -189,6 +197,7 @@ void handleReset() {
                          ", \"power\": " + String(isPowerOn ? 1 : 0) + 
                          ", \"message\": \"Сброс к значениям по умолчанию\"}";
     server.send(200, "application/json", jsonResponse);
+    yield();
     
     Serial.print("Сброс к значениям по умолчанию: Яркость=");
     Serial.print(currentBrightness);
@@ -202,6 +211,7 @@ void handleGetParameters() {
                          ", \"temperature\": " + String(currentTemperature) + 
                          ", \"power\": " + String(isPowerOn ? 1 : 0) + "}";
     server.send(200, "application/json", jsonResponse);
+    yield();
 }
 
 // ========== ОБРАБОТЧИК ПЕРЕКЛЮЧЕНИЯ ПИТАНИЯ ==========
@@ -219,6 +229,7 @@ void handlePowerToggle() {
                          ", \"temperature\": " + String(currentTemperature) + 
                          ", \"power\": " + String(isPowerOn ? 1 : 0) + "}";
     server.send(200, "application/json", jsonResponse);
+    yield();
     
     Serial.print("Питание переключено: ");
     Serial.println(isPowerOn ? "ВКЛ" : "ВЫКЛ");

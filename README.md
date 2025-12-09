@@ -9,4 +9,7 @@
 #define WIFI_PASS "your_password"
 ```
 ## Схема сборки
-<img src="images/scheme.png" alt="Схема" width="80%">
+<img src="images/scheme.png" alt="Схема" width="100%">
+
+## Веб интерфейс
+<img src="images/site.png" alt="Морда" width="100%">

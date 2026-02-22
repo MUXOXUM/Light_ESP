@@ -19,9 +19,11 @@ constexpr uint16_t KELVIN_MIN = 1000;
 constexpr uint16_t KELVIN_MAX = 4000;
 constexpr int8_t TIMEZONE_UTC_HOURS = 3;
 constexpr int32_t TZ_OFFSET_SECONDS = TIMEZONE_UTC_HOURS * 3600;
-constexpr uint16_t MAX_STRIP_CURRENT_MA = 1200;
+constexpr uint16_t MAX_STRIP_CURRENT_MA = 1800;
 constexpr uint32_t SCHEDULE_CHECK_MS = 2000;
-constexpr uint32_t BUTTON_DEBOUNCE_MS = 40;
+constexpr uint32_t BUTTON_DEBOUNCE_MS = 60;
+constexpr uint32_t POWER_FADE_DURATION_MS = 1000;
+constexpr uint32_t FADE_FRAME_INTERVAL_MS = 16;
 
 struct PersistedSettings {
   uint8_t marker;
@@ -44,10 +46,16 @@ bool pendingSave = false;
 uint32_t saveRequestedAt = 0;
 uint32_t lastWifiRetryAt = 0;
 uint32_t lastScheduleCheckAt = 0;
+uint32_t fadeStartedAt = 0;
+uint32_t lastFadeFrameAt = 0;
 
 bool buttonStableState = true;
 bool buttonLastReading = true;
 uint32_t buttonLastChangeAt = 0;
+bool fadeActive = false;
+uint8_t fadeStartScale255 = 0;
+uint8_t fadeTargetScale255 = 0;
+uint8_t lastPowerState = 0;
 
 const char INDEX_HTML[] PROGMEM = R"HTML(
 <!doctype html>
@@ -365,17 +373,50 @@ void temperatureToRGB(uint16_t kelvin, uint8_t &r, uint8_t &g, uint8_t &b) {
   b = clampU8(static_cast<int>(blue));
 }
 
-void applyStripState() {
+uint8_t getCurrentFadeScale255() {
+  if (!fadeActive) {
+    return fadeTargetScale255;
+  }
+
+  uint32_t elapsed = millis() - fadeStartedAt;
+  if (elapsed >= POWER_FADE_DURATION_MS) {
+    fadeActive = false;
+    return fadeTargetScale255;
+  }
+
+  int32_t delta = static_cast<int32_t>(fadeTargetScale255) - static_cast<int32_t>(fadeStartScale255);
+  int32_t value = static_cast<int32_t>(fadeStartScale255) + (delta * static_cast<int32_t>(elapsed)) / static_cast<int32_t>(POWER_FADE_DURATION_MS);
+  return clampU8(value);
+}
+
+void startPowerFade(uint8_t targetScale255) {
+  uint8_t currentScale255 = getCurrentFadeScale255();
+  fadeStartScale255 = currentScale255;
+  fadeTargetScale255 = targetScale255;
+  fadeStartedAt = millis();
+  fadeActive = fadeStartScale255 != fadeTargetScale255;
+}
+
+void applyStripState(bool logState = true) {
+  if (settings.power != lastPowerState) {
+    lastPowerState = settings.power;
+    startPowerFade(settings.power != 0 ? 255 : 0);
+  }
+
   uint8_t r = 0;
   uint8_t g = 0;
   uint8_t b = 0;
+  uint8_t powerScale255 = getCurrentFadeScale255();
 
-  if (settings.power != 0) {
+  if (powerScale255 > 0) {
     temperatureToRGB(settings.temperature, r, g, b);
     r = applyBrightness(r, settings.brightness);
     g = applyBrightness(g, settings.brightness);
     b = applyBrightness(b, settings.brightness);
     limitRgbByCurrent(r, g, b);
+    r = scaleChannelBy255(r, powerScale255);
+    g = scaleChannelBy255(g, powerScale255);
+    b = scaleChannelBy255(b, powerScale255);
   }
 
   for (uint16_t i = 0; i < LED_COUNT; i++) {
@@ -384,14 +425,29 @@ void applyStripState() {
 
   strip.show();
 
-  Serial.printf("[LED] Power=%u Brightness=%u Temp=%uK RGB=(%u,%u,%u) MaxCurrent=%umA\n",
-                settings.power,
-                settings.brightness,
-                settings.temperature,
-                r,
-                g,
-                b,
-                MAX_STRIP_CURRENT_MA);
+  if (logState) {
+    Serial.printf("[LED] Power=%u Brightness=%u Temp=%uK Fade=%u RGB=(%u,%u,%u) MaxCurrent=%umA\n",
+                  settings.power,
+                  settings.brightness,
+                  settings.temperature,
+                  powerScale255,
+                  r,
+                  g,
+                  b,
+                  MAX_STRIP_CURRENT_MA);
+  }
+}
+
+void updateFadeAnimation() {
+  if (!fadeActive) {
+    return;
+  }
+
+  if (millis() - lastFadeFrameAt < FADE_FRAME_INTERVAL_MS) {
+    return;
+  }
+  lastFadeFrameAt = millis();
+  applyStripState(false);
 }
 
 void requestSave() {
@@ -689,6 +745,12 @@ void setup() {
   EEPROM.begin(EEPROM_SIZE);
   loadSettings();
 
+  // Sync fade state with loaded power state to avoid false transition on boot.
+  lastPowerState = settings.power;
+  fadeStartScale255 = settings.power != 0 ? 255 : 0;
+  fadeTargetScale255 = fadeStartScale255;
+  fadeActive = false;
+
   pinMode(BTN_PIN, INPUT_PULLUP);
 
   initStrip();
@@ -701,6 +763,7 @@ void loop() {
   server.handleClient();
   maintainWiFi();
   handleButton();
+  updateFadeAnimation();
   applyScheduleIfNeeded();
   saveSettingsIfNeeded();
 }

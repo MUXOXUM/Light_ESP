@@ -112,6 +112,20 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
       margin: 0;
       pointer-events: none;
     }
+    .toggle-collapsible {
+      overflow: hidden;
+      max-height: 64px;
+      opacity: 1;
+      transform: translateY(0);
+      transition: max-height 300ms ease, opacity 240ms ease, transform 300ms ease, margin 300ms ease;
+    }
+    .toggle-collapsible.collapsed {
+      max-height: 0;
+      opacity: 0;
+      transform: translateY(-6px);
+      margin: 0;
+      pointer-events: none;
+    }
     .label {
       display: flex;
       justify-content: space-between;
@@ -158,7 +172,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
       <input id="temperature" type="range" min="1000" max="4000" step="10" />
     </div>
 
-    <div class="row">
+    <div id="toggleRow" class="row toggle-collapsible">
       <button id="toggleBtn">Включено</button>
     </div>
 
@@ -185,6 +199,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     const temperature = document.getElementById('temperature');
     const brightnessValue = document.getElementById('brightnessValue');
     const temperatureValue = document.getElementById('temperatureValue');
+    const toggleRow = document.getElementById('toggleRow');
     const toggleBtn = document.getElementById('toggleBtn');
     const statusEl = document.getElementById('status');
     const scheduleEnabled = document.getElementById('scheduleEnabled');
@@ -205,6 +220,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     };
     let timer = null;
     let pushSeq = 0;
+    let syncTimer = null;
 
     function render() {
       brightness.value = state.brightness;
@@ -213,6 +229,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
       temperatureValue.textContent = `${state.temperature} K`;
       toggleBtn.textContent = state.on ? 'Включено' : 'Выключено';
       toggleBtn.classList.toggle('off', !state.on);
+      toggleRow.classList.toggle('collapsed', state.scheduleEnabled);
       scheduleEnabled.checked = state.scheduleEnabled;
       scheduleValue.textContent = state.scheduleEnabled ? 'активно' : 'выключено';
       scheduleSettingsRow.classList.toggle('collapsed', !state.scheduleEnabled);
@@ -238,6 +255,21 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
       if (seq !== pushSeq) {
         return;
       }
+      state = {
+        brightness: data.brightness,
+        temperature: data.temperature,
+        on: Boolean(data.on),
+        scheduleEnabled: Boolean(data.schedule),
+        onTime: data.onTime,
+        offTime: data.offTime
+      };
+      statusEl.textContent = `IP: ${data.ip} | Wi-Fi: ${data.wifi} | Время: ${data.time}`;
+      render();
+    }
+
+    async function syncStateSilently() {
+      const response = await fetch('/api/state');
+      const data = await response.json();
       state = {
         brightness: data.brightness,
         temperature: data.temperature,
@@ -294,18 +326,13 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     });
 
     async function loadInitialState() {
-      const response = await fetch('/api/state');
-      const data = await response.json();
-      state = {
-        brightness: data.brightness,
-        temperature: data.temperature,
-        on: Boolean(data.on),
-        scheduleEnabled: Boolean(data.schedule),
-        onTime: data.onTime,
-        offTime: data.offTime
-      };
-      statusEl.textContent = `IP: ${data.ip} | Wi-Fi: ${data.wifi} | Время: ${data.time}`;
-      render();
+      await syncStateSilently();
+      if (syncTimer) {
+        clearInterval(syncTimer);
+      }
+      syncTimer = setInterval(() => {
+        syncStateSilently().catch(() => {});
+      }, 2000);
     }
 
     loadInitialState().catch(() => {

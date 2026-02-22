@@ -9,15 +9,17 @@
 #include "secrets.h"
 
 namespace {
-constexpr uint8_t LED_PIN = D4;        // GPIO2
+constexpr uint8_t LED_PIN = D4;
 constexpr uint8_t BTN_PIN = D5;
-constexpr uint16_t LED_COUNT = 30;
+constexpr uint16_t LED_COUNT = 63;
 constexpr uint16_t EEPROM_SIZE = 64;
 constexpr uint32_t SAVE_DELAY_MS = 1200;
 constexpr uint32_t WIFI_RETRY_MS = 5000;
 constexpr uint16_t KELVIN_MIN = 1000;
 constexpr uint16_t KELVIN_MAX = 4000;
-constexpr int32_t TZ_OFFSET_SECONDS = 3 * 3600;
+constexpr int8_t TIMEZONE_UTC_HOURS = 3;
+constexpr int32_t TZ_OFFSET_SECONDS = TIMEZONE_UTC_HOURS * 3600;
+constexpr uint16_t MAX_STRIP_CURRENT_MA = 1200;
 constexpr uint32_t SCHEDULE_CHECK_MS = 2000;
 constexpr uint32_t BUTTON_DEBOUNCE_MS = 40;
 
@@ -33,7 +35,7 @@ struct PersistedSettings {
   uint8_t scheduleEnabled;
 };
 
-PersistedSettings settings = {0xA5, 180, 2000, 1, 18, 0, 23, 30, 0};
+PersistedSettings settings = {0xA5, 70, 2000, 1, 18, 0, 23, 30, 0};
 
 ESP8266WebServer server(80);
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -123,13 +125,13 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     <h1>WS2812 Controller</h1>
 
     <div class="row">
-      <div class="label"><span>Яркость</span><span id="brightnessValue">0</span></div>
-      <input id="brightness" type="range" min="0" max="255" step="1" />
+      <div class="label"><span>Яркость</span><span id="brightnessValue">0%</span></div>
+      <input id="brightness" type="range" min="0" max="100" step="1" />
     </div>
 
     <div class="row">
       <div class="label"><span>Температура</span><span id="temperatureValue">0 K</span></div>
-      <input id="temperature" type="range" min="2700" max="6500" step="10" />
+      <input id="temperature" type="range" min="1000" max="4000" step="10" />
     </div>
 
     <div class="row">
@@ -145,9 +147,9 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     </div>
 
     <div class="row" style="display:grid;gap:10px;">
-      <div class="label"><span>Время включения (UTC+3)</span><span id="onTimeValue">--:--</span></div>
+      <div class="label"><span>Время включения (локальное)</span><span id="onTimeValue">--:--</span></div>
       <input id="onTime" type="time" />
-      <div class="label"><span>Время выключения (UTC+3)</span><span id="offTimeValue">--:--</span></div>
+      <div class="label"><span>Время выключения (локальное)</span><span id="offTimeValue">--:--</span></div>
       <input id="offTime" type="time" />
     </div>
 
@@ -169,19 +171,20 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     const offTimeValue = document.getElementById('offTimeValue');
 
     let state = {
-      brightness: 180,
-      temperature: 4000,
+      brightness: 70,
+      temperature: 2000,
       on: true,
       scheduleEnabled: false,
       onTime: '18:00',
       offTime: '23:30'
     };
     let timer = null;
+    let pushSeq = 0;
 
     function render() {
       brightness.value = state.brightness;
       temperature.value = state.temperature;
-      brightnessValue.textContent = state.brightness;
+      brightnessValue.textContent = `${state.brightness}%`;
       temperatureValue.textContent = `${state.temperature} K`;
       toggleBtn.textContent = state.on ? 'Включено' : 'Выключено';
       toggleBtn.classList.toggle('off', !state.on);
@@ -194,6 +197,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     }
 
     async function pushState() {
+      const seq = ++pushSeq;
       const query = new URLSearchParams({
         brightness: state.brightness,
         temperature: state.temperature,
@@ -205,6 +209,9 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 
       const response = await fetch(`/api/set?${query.toString()}`);
       const data = await response.json();
+      if (seq !== pushSeq) {
+        return;
+      }
       state = {
         brightness: data.brightness,
         temperature: data.temperature,
@@ -226,7 +233,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 
     brightness.addEventListener('input', () => {
       state.brightness = Number(brightness.value);
-      brightnessValue.textContent = state.brightness;
+      brightnessValue.textContent = `${state.brightness}%`;
       schedulePush();
     });
 
@@ -295,7 +302,35 @@ uint8_t clampU8(int value) {
 }
 
 uint8_t applyBrightness(uint8_t channel, uint8_t brightness) {
-  return static_cast<uint8_t>((static_cast<uint16_t>(channel) * brightness) / 255);
+  return static_cast<uint8_t>((static_cast<uint16_t>(channel) * brightness) / 100);
+}
+
+uint8_t scaleChannelBy255(uint8_t channel, uint8_t scale255) {
+  return static_cast<uint8_t>((static_cast<uint16_t>(channel) * scale255) / 255);
+}
+
+uint32_t estimateCurrentMa(uint8_t r, uint8_t g, uint8_t b) {
+  // Approximation for WS2812: up to 20mA per color channel at value 255.
+  uint32_t rgbSum = static_cast<uint32_t>(r) + g + b;
+  uint64_t numerator = static_cast<uint64_t>(LED_COUNT) * rgbSum * 20;
+  return static_cast<uint32_t>((numerator + 254) / 255);
+}
+
+void limitRgbByCurrent(uint8_t &r, uint8_t &g, uint8_t &b) {
+  uint32_t estimatedCurrentMa = estimateCurrentMa(r, g, b);
+  if (estimatedCurrentMa <= MAX_STRIP_CURRENT_MA || estimatedCurrentMa == 0) {
+    return;
+  }
+
+  uint32_t scale = (static_cast<uint32_t>(MAX_STRIP_CURRENT_MA) * 255) / estimatedCurrentMa;
+  if (scale > 255) {
+    scale = 255;
+  }
+
+  uint8_t scale255 = static_cast<uint8_t>(scale);
+  r = scaleChannelBy255(r, scale255);
+  g = scaleChannelBy255(g, scale255);
+  b = scaleChannelBy255(b, scale255);
 }
 
 void temperatureToRGB(uint16_t kelvin, uint8_t &r, uint8_t &g, uint8_t &b) {
@@ -340,6 +375,7 @@ void applyStripState() {
     r = applyBrightness(r, settings.brightness);
     g = applyBrightness(g, settings.brightness);
     b = applyBrightness(b, settings.brightness);
+    limitRgbByCurrent(r, g, b);
   }
 
   for (uint16_t i = 0; i < LED_COUNT; i++) {
@@ -348,13 +384,14 @@ void applyStripState() {
 
   strip.show();
 
-  Serial.printf("[LED] Power=%u Brightness=%u Temp=%uK RGB=(%u,%u,%u)\n",
+  Serial.printf("[LED] Power=%u Brightness=%u Temp=%uK RGB=(%u,%u,%u) MaxCurrent=%umA\n",
                 settings.power,
                 settings.brightness,
                 settings.temperature,
                 r,
                 g,
-                b);
+                b,
+                MAX_STRIP_CURRENT_MA);
 }
 
 void requestSave() {
@@ -390,6 +427,10 @@ void loadSettings() {
                  loaded.scheduleEnabled <= 1;
 
   if (isValid) {
+    // Migrate legacy brightness scale 0..255 to percent scale 0..100.
+    if (loaded.brightness > 100) {
+      loaded.brightness = static_cast<uint8_t>((static_cast<uint16_t>(loaded.brightness) * 100 + 127) / 255);
+    }
     settings = loaded;
     Serial.printf("[EEPROM] Loaded: brightness=%u temp=%u power=%u\n",
                   settings.brightness,
@@ -423,7 +464,7 @@ void connectWiFi() {
 
 void initTimeSync() {
   configTime(TZ_OFFSET_SECONDS, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
-  Serial.println("[TIME] NTP sync configured (UTC+3)");
+  Serial.printf("[TIME] NTP sync configured (UTC%+d)\n", TIMEZONE_UTC_HOURS);
 }
 
 void maintainWiFi() {
@@ -566,7 +607,13 @@ void handleState() {
 void handleSet() {
   if (server.hasArg("brightness")) {
     int value = server.arg("brightness").toInt();
-    settings.brightness = clampU8(value);
+    if (value < 0) {
+      value = 0;
+    }
+    if (value > 100) {
+      value = 100;
+    }
+    settings.brightness = static_cast<uint8_t>(value);
   }
 
   if (server.hasArg("temperature")) {

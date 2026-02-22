@@ -96,6 +96,22 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     .row {
       margin: 14px 0;
     }
+    .collapsible {
+      display: grid;
+      gap: 10px;
+      overflow: hidden;
+      max-height: 220px;
+      opacity: 1;
+      transform: translateY(0);
+      transition: max-height 380ms ease, opacity 320ms ease, transform 380ms ease, margin 380ms ease;
+    }
+    .collapsible.collapsed {
+      max-height: 0;
+      opacity: 0;
+      transform: translateY(-6px);
+      margin: 0;
+      pointer-events: none;
+    }
     .label {
       display: flex;
       justify-content: space-between;
@@ -154,7 +170,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
       </label>
     </div>
 
-    <div class="row" style="display:grid;gap:10px;">
+    <div id="scheduleSettingsRow" class="row collapsible collapsed">
       <div class="label"><span>Время включения (локальное)</span><span id="onTimeValue">--:--</span></div>
       <input id="onTime" type="time" />
       <div class="label"><span>Время выключения (локальное)</span><span id="offTimeValue">--:--</span></div>
@@ -173,6 +189,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     const statusEl = document.getElementById('status');
     const scheduleEnabled = document.getElementById('scheduleEnabled');
     const scheduleValue = document.getElementById('scheduleValue');
+    const scheduleSettingsRow = document.getElementById('scheduleSettingsRow');
     const onTime = document.getElementById('onTime');
     const offTime = document.getElementById('offTime');
     const onTimeValue = document.getElementById('onTimeValue');
@@ -198,6 +215,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
       toggleBtn.classList.toggle('off', !state.on);
       scheduleEnabled.checked = state.scheduleEnabled;
       scheduleValue.textContent = state.scheduleEnabled ? 'активно' : 'выключено';
+      scheduleSettingsRow.classList.toggle('collapsed', !state.scheduleEnabled);
       onTime.value = state.onTime;
       offTime.value = state.offTime;
       onTimeValue.textContent = state.onTime;
